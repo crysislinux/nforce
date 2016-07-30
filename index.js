@@ -485,6 +485,28 @@ Connection.prototype.insert = function(data, callback) {
   return this._apiRequest(opts, opts.callback);
 };
 
+Connection.prototype.insertMulti = function(data, callback) {
+  var opts = this._getOpts(data, callback);
+  opts.raw = true;
+  var type = opts.sobjects[0].getType();
+
+  opts.resource = '/composite/tree/' + type;
+  opts.method = 'POST';
+  if(type === 'document' || type === 'attachment' || type === 'contentversion') {
+    throw new Error('insertMulti don\'t support type: ' + type);
+  } else {
+    var records = [];
+    opts.sobjects.forEach(function(sobject, index) {
+      var payload = sobject._getPayload(false);
+      payload.attributes = { type: type, referenceId: 'ref' + (index + 1) };
+      records.push(payload);
+    })
+
+    opts.body = JSON.stringify({records: records});
+  }
+  return this._apiRequest(opts, opts.callback);
+};
+
 Connection.prototype.update = function(data, callback) {
   var opts = this._getOpts(data, callback);
   var type = opts.sobject.getType();
